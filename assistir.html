@@ -6,8 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yuri Games TV Kids</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-
   <style>
     body {
       margin: 0;
@@ -35,9 +33,10 @@
       min-width: 280px;
     }
 
-    video {
+    .player iframe {
       width: 100%;
       aspect-ratio: 16 / 9;
+      border: 0;
       background: black;
     }
 
@@ -80,127 +79,23 @@
 
 <main>
   <section class="player">
-    <video id="video" controls playsinline></video>
-    <p id="status">Aguardando playlist...</p>
+    <iframe
+      src="https://culturaplay.tvcultura.com.br/channels/14/embed"
+      title="TV Cultura - ao vivo"
+      allow="autoplay; fullscreen"
+      allowfullscreen>
+    </iframe>
+
+    <p id="status">TV Cultura - ao vivo | Classificação: L</p>
   </section>
 
   <aside>
     <h3>Lista de canais</h3>
-    <div id="channels"></div>
+    <button class="channel" type="button">
+      TV Cultura - ao vivo | Classificação: L
+    </button>
   </aside>
 </main>
 
-<script>
-  // Coloque aqui o endereço de uma playlist M3U autorizada.
-  const playlistURL = "COLE_A_URL_DA_SUA_PLAYLIST_AUTORIZADA";
-
-  const video = document.getElementById("video");
-  const channelsBox = document.getElementById("channels");
-  const status = document.getElementById("status");
-
-  let hls = null;
-
-  async function loadPlaylist() {
-    try {
-      const response = await fetch(playlistURL);
-
-      if (!response.ok) {
-        throw new Error("Erro ao buscar playlist.");
-      }
-
-      const playlist = await response.text();
-      const lines = playlist.split(/\r?\n/);
-
-      let channelName = "";
-      let count = 0;
-
-      for (const line of lines) {
-        if (line.startsWith("#EXTINF")) {
-          channelName = line.split(",").pop().trim();
-        } else if (
-          line.trim() &&
-          !line.startsWith("#") &&
-          channelName
-        ) {
-          const streamURL = line.trim();
-
-          addChannel(channelName, streamURL);
-          channelName = "";
-          count++;
-        }
-      }
-
-      status.textContent = count + " canais encontrados.";
-
-      if (count === 0) {
-        status.textContent = "Nenhum canal encontrado.";
-      }
-
-    } catch (error) {
-      status.textContent =
-        "Não foi possível carregar a playlist: " + error.message;
-    }
-  }
-
-  function addChannel(name, url) {
-    const button = document.createElement("button");
-
-    button.className = "channel";
-    button.textContent = name;
-
-    button.addEventListener("click", () => {
-      playChannel(url, name);
-    });
-
-    channelsBox.appendChild(button);
-  }
-
-  function playChannel(url, name) {
-    if (hls) {
-      hls.destroy();
-      hls = null;
-    }
-
-    video.pause();
-    video.removeAttribute("src");
-    video.load();
-
-    status.textContent = "Carregando " + name + "...";
-
-    if (Hls.isSupported()) {
-      hls = new Hls();
-
-      hls.loadSource(url);
-      hls.attachMedia(video);
-
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(() => {
-          status.textContent =
-            "Clique no botão de reprodução para assistir.";
-        });
-      });
-
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.fatal) {
-          status.textContent =
-            "Não foi possível reproduzir este canal.";
-        }
-      });
-
-    } else if (
-      video.canPlayType("application/vnd.apple.mpegurl")
-    ) {
-      video.src = url;
-      video.play();
-    } else {
-      status.textContent =
-        "Seu navegador não suporta HLS.";
-    }
-  }
-
-  loadPlaylist();
-</script>
-
 </body>
 </html>
-
