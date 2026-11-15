@@ -1,0 +1,101 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yuri Games TV Kids</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: #171717;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    header {
+      background: #252525;
+      padding: 20px;
+      font-size: 23px;
+      font-weight: bold;
+    }
+
+    main {
+      display: flex;
+      gap: 20px;
+      padding: 20px;
+      flex-wrap: wrap;
+    }
+
+    .player {
+      flex: 2;
+      min-width: 280px;
+    }
+
+    .player iframe {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: 0;
+      background: black;
+    }
+
+    aside {
+      flex: 1;
+      min-width: 230px;
+      max-height: 500px;
+      overflow-y: auto;
+      background: #252525;
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    .channel {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      margin-bottom: 8px;
+      border: 0;
+      border-radius: 5px;
+      background: #383838;
+      color: white;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .channel:hover {
+      background: #555;
+    }
+
+    #status {
+      color: #ccc;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>Yuri Games TV Kids</header>
+
+<main>
+  <section class="player">
+    <iframe
+      src="https://culturaplay.tvcultura.com.br/channels/14/embed"
+      title="TV Cultura ao vivo"
+      allow="autoplay; fullscreen"
+      allowfullscreen>
+    </iframe>
+
+    <p id="status">TV Cultura</p>
+  </section>
+
+  <aside>
+    <h3>Lista de canais</h3>
+    <button class="channel" type="button">
+      TV Cultura
+    </button>
+  </aside>
+</main>
+
+</body>
+</html>
