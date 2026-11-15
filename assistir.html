@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Yuri Games - TV Kids</title>
+  <title>Yuri Games TV Kids</title>
 
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
@@ -17,9 +17,9 @@
     }
 
     header {
-      padding: 18px;
       background: #252525;
-      font-size: 22px;
+      padding: 20px;
+      font-size: 23px;
       font-weight: bold;
     }
 
@@ -37,29 +37,29 @@
 
     video {
       width: 100%;
-      background: black;
       aspect-ratio: 16 / 9;
+      background: black;
     }
 
     aside {
       flex: 1;
-      min-width: 220px;
+      min-width: 230px;
       max-height: 500px;
       overflow-y: auto;
       background: #252525;
+      padding: 15px;
       border-radius: 8px;
-      padding: 12px;
     }
 
     .channel {
       display: block;
       width: 100%;
       padding: 13px;
-      margin-bottom: 7px;
-      background: #383838;
-      color: white;
+      margin-bottom: 8px;
       border: 0;
       border-radius: 5px;
+      background: #383838;
+      color: white;
       text-align: left;
       cursor: pointer;
     }
@@ -70,30 +70,29 @@
 
     #status {
       color: #ccc;
-      padding: 10px 0;
     }
   </style>
 </head>
 
 <body>
 
-<header>Yuri Games - TV Kids</header>
+<header>Yuri Games TV Kids</header>
 
 <main>
   <section class="player">
     <video id="video" controls playsinline></video>
-    <p id="status">Carregando canais...</p>
+    <p id="status">Aguardando playlist...</p>
   </section>
 
   <aside>
-    <h3>Canais</h3>
+    <h3>Lista de canais</h3>
     <div id="channels"></div>
   </aside>
 </main>
 
 <script>
-  const playlistURL =
-    "https://iptv-org.github.io/iptv/categories/kids.m3u";
+  // Coloque aqui o endereço de uma playlist M3U autorizada.
+  const playlistURL = "COLE_A_URL_DA_SUA_PLAYLIST_AUTORIZADA";
 
   const video = document.getElementById("video");
   const channelsBox = document.getElementById("channels");
@@ -106,48 +105,52 @@
       const response = await fetch(playlistURL);
 
       if (!response.ok) {
-        throw new Error("Não foi possível carregar a playlist.");
+        throw new Error("Erro ao buscar playlist.");
       }
 
-      const text = await response.text();
-      const lines = text.split(/\r?\n/);
+      const playlist = await response.text();
+      const lines = playlist.split(/\r?\n/);
 
-      let name = "";
+      let channelName = "";
+      let count = 0;
 
       for (const line of lines) {
         if (line.startsWith("#EXTINF")) {
-          name = line.split(",").pop().trim();
-        } else if (line.trim() && !line.startsWith("#") && name) {
-          const url = line.trim();
+          channelName = line.split(",").pop().trim();
+        } else if (
+          line.trim() &&
+          !line.startsWith("#") &&
+          channelName
+        ) {
+          const streamURL = line.trim();
 
-          // Mostra apenas streams autorizados que você adicionar.
-          if (url.startsWith("https://SEU-STREAM-AUTORIZADO/")) {
-            addChannel(name, url);
-          }
-
-          name = "";
+          addChannel(channelName, streamURL);
+          channelName = "";
+          count++;
         }
       }
 
-      status.textContent =
-        "Playlist carregada. Adicione streams autorizados para reprodução.";
+      status.textContent = count + " canais encontrados.";
 
-      if (!channelsBox.children.length) {
-        channelsBox.textContent =
-          "Nenhum stream autorizado foi configurado ainda.";
+      if (count === 0) {
+        status.textContent = "Nenhum canal encontrado.";
       }
 
     } catch (error) {
-      status.textContent = "Erro ao carregar a playlist: " + error.message;
+      status.textContent =
+        "Não foi possível carregar a playlist: " + error.message;
     }
   }
 
   function addChannel(name, url) {
     const button = document.createElement("button");
+
     button.className = "channel";
     button.textContent = name;
 
-    button.onclick = () => playChannel(url, name);
+    button.addEventListener("click", () => {
+      playChannel(url, name);
+    });
 
     channelsBox.appendChild(button);
   }
@@ -158,27 +161,40 @@
       hls = null;
     }
 
-    status.textContent = "Carregando: " + name;
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+
+    status.textContent = "Carregando " + name + "...";
 
     if (Hls.isSupported()) {
       hls = new Hls();
+
       hls.loadSource(url);
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play();
-        status.textContent = "Reproduzindo: " + name;
+        video.play().catch(() => {
+          status.textContent =
+            "Clique no botão de reprodução para assistir.";
+        });
       });
 
-      hls.on(Hls.Events.ERROR, () => {
-        status.textContent = "Não foi possível reproduzir este canal.";
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal) {
+          status.textContent =
+            "Não foi possível reproduzir este canal.";
+        }
       });
 
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    } else if (
+      video.canPlayType("application/vnd.apple.mpegurl")
+    ) {
       video.src = url;
       video.play();
     } else {
-      status.textContent = "Seu navegador não suporta este formato.";
+      status.textContent =
+        "Seu navegador não suporta HLS.";
     }
   }
 
@@ -187,3 +203,4 @@
 
 </body>
 </html>
+
