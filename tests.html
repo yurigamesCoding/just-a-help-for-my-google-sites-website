@@ -4,98 +4,245 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Yuri Games TV Kids</title>
+  <title>Yuri IPTV - Teste</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
   <style>
     body {
       margin: 0;
-      background: #171717;
+      background: #111;
       color: white;
       font-family: Arial, sans-serif;
     }
 
     header {
-      background: #252525;
       padding: 20px;
-      font-size: 23px;
-      font-weight: bold;
+      background: #202020;
+      text-align: center;
     }
 
     main {
-      display: flex;
-      gap: 20px;
+      max-width: 1000px;
+      margin: auto;
       padding: 20px;
-      flex-wrap: wrap;
     }
 
-    .player {
-      flex: 2;
-      min-width: 280px;
-    }
-
-    .player iframe {
+    video {
       width: 100%;
-      aspect-ratio: 16 / 9;
-      border: 0;
       background: black;
+      aspect-ratio: 16 / 9;
+      border-radius: 10px;
     }
 
-    aside {
-      flex: 1;
-      min-width: 230px;
-      max-height: 500px;
-      overflow-y: auto;
-      background: #252525;
-      padding: 15px;
-      border-radius: 8px;
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 13px;
+      margin: 15px 0;
+      border: 1px solid #444;
+      border-radius: 7px;
+      background: #222;
+      color: white;
+      font-size: 16px;
+    }
+
+    #channels {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
     }
 
     .channel {
-      display: block;
-      width: 100%;
-      padding: 13px;
-      margin-bottom: 8px;
-      border: 0;
-      border-radius: 5px;
-      background: #383838;
+      padding: 14px;
+      border: 1px solid #333;
+      border-radius: 7px;
+      background: #222;
       color: white;
-      text-align: left;
       cursor: pointer;
+      text-align: left;
     }
 
     .channel:hover {
-      background: #555;
+      background: #383838;
     }
 
     #status {
-      color: #ccc;
+      color: #bbb;
+      margin: 15px 0;
     }
   </style>
 </head>
 
 <body>
 
-<header>Yuri Games TV Kids</header>
+<header>
+  <h1>YURI IPTV</h1>
+  <p>Televisão ao vivo</p>
+</header>
 
 <main>
-  <section class="player">
-    <iframe
-      src="https://culturaplay.tvcultura.com.br/channels/14/embed"
-      title="TV Cultura ao vivo"
-      allow="autoplay; fullscreen"
-      allowfullscreen>
-    </iframe>
 
-    <p id="status">TV Cultura</p>
-  </section>
+  <h2 id="channelName">Selecione um canal</h2>
 
-  <aside>
-    <h3>Lista de canais</h3>
-    <button class="channel" type="button">
-      TV Cultura
-    </button>
-  </aside>
+  <video id="player" controls playsinline></video>
+
+  <p id="status">Carregando playlist...</p>
+
+  <input
+    type="text"
+    id="search"
+    placeholder="Pesquisar canais..."
+  >
+
+  <h2>Canais brasileiros</h2>
+
+  <div id="channels"></div>
+
 </main>
+
+<script>
+  const playlistURL =
+    "https://iptv-org.github.io/iptv/countries/br.m3u";
+
+  const video = document.getElementById("player");
+  const channelsBox = document.getElementById("channels");
+  const statusText = document.getElementById("status");
+  const searchInput = document.getElementById("search");
+  const channelName = document.getElementById("channelName");
+
+  let channels = [];
+  let hls = null;
+
+  async function loadPlaylist() {
+    try {
+      const response = await fetch(playlistURL);
+
+      if (!response.ok) {
+        throw new Error("Não foi possível carregar a playlist.");
+      }
+
+      const text = await response.text();
+      const lines = text.split(/\r?\n/);
+
+      let currentChannel = null;
+
+      for (const line of lines) {
+        const value = line.trim();
+
+        if (value.startsWith("#EXTINF:")) {
+          const name = value.split(",").pop().trim();
+
+          currentChannel = {
+            name: name || "Canal sem nome"
+          };
+        } else if (
+          currentChannel &&
+          value &&
+          !value.startsWith("#")
+        ) {
+          currentChannel.url = value;
+          channels.push(currentChannel);
+          currentChannel = null;
+        }
+      }
+
+      statusText.textContent =
+        channels.length + " canais carregados.";
+
+      renderChannels(channels);
+
+    } catch (error) {
+      statusText.textContent =
+        "Erro ao carregar: " + error.message;
+    }
+  }
+
+  function renderChannels(list) {
+    channelsBox.innerHTML = "";
+
+    list.forEach(channel => {
+      const button = document.createElement("button");
+
+      button.className = "channel";
+      button.textContent = channel.name;
+
+      button.addEventListener("click", () => {
+        playChannel(channel);
+      });
+
+      channelsBox.appendChild(button);
+    });
+  }
+
+  function playChannel(channel) {
+    channelName.textContent = channel.name;
+    statusText.textContent = "Carregando transmissão...";
+
+    if (hls) {
+      hls.destroy();
+      hls = null;
+    }
+
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+
+    if (Hls.isSupported()) {
+      hls = new Hls();
+
+      hls.loadSource(channel.url);
+      hls.attachMedia(video);
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        statusText.textContent =
+          "Canal carregado. Clique em reproduzir.";
+
+        video.play().catch(() => {
+          statusText.textContent =
+            "Clique no botão de reprodução.";
+        });
+      });
+
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal) {
+          statusText.textContent =
+            "Não foi possível reproduzir este canal.";
+          hls.destroy();
+          hls = null;
+        }
+      });
+
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = channel.url;
+
+      video.addEventListener("loadedmetadata", () => {
+        statusText.textContent = "Canal carregado.";
+      }, { once: true });
+
+      video.play().catch(() => {
+        statusText.textContent =
+          "Clique no botão de reprodução.";
+      });
+
+    } else {
+      statusText.textContent =
+        "Seu navegador não suporta este formato.";
+    }
+  }
+
+  searchInput.addEventListener("input", () => {
+    const query = searchInput.value.toLowerCase();
+
+    const filtered = channels.filter(channel =>
+      channel.name.toLowerCase().includes(query)
+    );
+
+    renderChannels(filtered);
+  });
+
+  loadPlaylist();
+</script>
 
 </body>
 </html>
